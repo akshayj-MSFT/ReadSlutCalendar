@@ -5,6 +5,7 @@ from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from dotenv import load_dotenv
+from datetime import datetime, timedelta, timezone
 
 # Load environment variables from .env file
 load_dotenv()
@@ -46,10 +47,58 @@ def get_calendar_service():
 
 def list_calendar_events():
     service = get_calendar_service()
-    events_result = service.events().list(calendarId='primary', timeMin='2024-01-01T00:00:00Z', timeMax='2024-12-31T23:59:59Z').execute()
+    
+    # Get events for the current week
+    time_min = datetime.now(timezone.utc).isoformat()
+    time_max = (datetime.now(timezone.utc) + timedelta(weeks=1)).isoformat()
+    events_result = service.events().list(calendarId='primary', timeMin=time_min, timeMax=time_max).execute()    
     events = events_result.get('items', [])
+    # Sort events by start time
+    events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
+    print(f"Upcoming events for the this week:")
+    print(f"----------------------------------")
     for event in events:
-        print(f"Event: {event['summary']}, Start: {event['start']['dateTime']}, End: {event['end']['dateTime']}")
+        stringStarttime = event['start'].get('dateTime', event['start'].get('date'))
+        starttime = datetime.strptime(stringStarttime, '%Y-%m-%dT%H:%M:%S%z')
+        friendlyStarttime = starttime.strftime(f'%A, %B {starttime.day}{get_ordinal_suffix(starttime.day)}, %#I:%M%p')
+        stringEndTime = event['end'].get('dateTime', event['end'].get('date'))
+        endtime = datetime.strptime(stringEndTime, '%Y-%m-%dT%H:%M:%S%z')
+        friendlyEndtime = endtime.strftime(f'%A, %B {endtime.day}{get_ordinal_suffix(endtime.day)}, %#I:%M%p')
+        location = event.get('location', 'Location not specified')
+        print(f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location}")
+
+
+    # shift time window to next week
+    time_min = time_max
+    time_max = (datetime.now(timezone.utc) + timedelta(weeks=2)).isoformat()
+    events_result = service.events().list(calendarId='primary', timeMin=time_min, timeMax=time_max).execute()    
+
+    events = events_result.get('items', [])
+    # Sort events by start time
+    events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
+    print(f"\nUpcoming events for the next week:")
+    print(f"----------------------------------")
+    for event in events:
+        stringStarttime = event['start'].get('dateTime', event['start'].get('date'))
+        starttime = datetime.strptime(stringStarttime, '%Y-%m-%dT%H:%M:%S%z')
+        friendlyStarttime = starttime.strftime(f'%A, %B {starttime.day}{get_ordinal_suffix(starttime.day)}, %#I:%M%p')
+        stringEndTime = event['end'].get('dateTime', event['end'].get('date'))
+        endtime = datetime.strptime(stringEndTime, '%Y-%m-%dT%H:%M:%S%z')
+        friendlyEndtime = endtime.strftime(f'%A, %B {endtime.day}{get_ordinal_suffix(endtime.day)}, %#I:%M%p')
+        location = event.get('location', 'Location not specified')
+        print(f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location}")
+
+    
+# Helper function to determine ordinal suffix
+def get_ordinal_suffix(day):
+    if 10 <= day % 100 <= 20:
+        return 'th'
+    else:
+        return {1: 'st', 2: 'nd', 3: 'rd'}.get(day % 10, 'th')
+    
 
 if __name__ == '__main__':
     list_calendar_events()
+
+
+# friendly_format = now.strftime(f'%A, %B {now.day}{get_ordinal_suffix(now.day)}, %#I:%M%p')
