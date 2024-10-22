@@ -57,15 +57,7 @@ def list_calendar_events():
     events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
     print(f"Upcoming events for the this week:")
     print(f"----------------------------------")
-    for event in events:
-        stringStarttime = event['start'].get('dateTime', event['start'].get('date'))
-        starttime = datetime.strptime(stringStarttime, '%Y-%m-%dT%H:%M:%S%z')
-        friendlyStarttime = starttime.strftime(f'%A, %B {starttime.day}{get_ordinal_suffix(starttime.day)}, %#I:%M%p')
-        stringEndTime = event['end'].get('dateTime', event['end'].get('date'))
-        endtime = datetime.strptime(stringEndTime, '%Y-%m-%dT%H:%M:%S%z')
-        friendlyEndtime = endtime.strftime(f'%A, %B {endtime.day}{get_ordinal_suffix(endtime.day)}, %#I:%M%p')
-        location = event.get('location', 'Location not specified')
-        print(f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location}")
+    print_events(events)
 
 
     # shift time window to next week
@@ -78,13 +70,18 @@ def list_calendar_events():
     events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
     print(f"\nUpcoming events for the next week:")
     print(f"----------------------------------")
+    print_events(events)
+
+def print_events(events):
     for event in events:
+        # convert start and end time to human-readable format
         stringStarttime = event['start'].get('dateTime', event['start'].get('date'))
         starttime = datetime.strptime(stringStarttime, '%Y-%m-%dT%H:%M:%S%z')
         friendlyStarttime = starttime.strftime(f'%A, %B {starttime.day}{get_ordinal_suffix(starttime.day)}, %#I:%M%p')
         stringEndTime = event['end'].get('dateTime', event['end'].get('date'))
         endtime = datetime.strptime(stringEndTime, '%Y-%m-%dT%H:%M:%S%z')
         friendlyEndtime = endtime.strftime(f'%A, %B {endtime.day}{get_ordinal_suffix(endtime.day)}, %#I:%M%p')
+        # get location if available
         location = event.get('location', 'Location not specified')
         print(f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location}")
 
