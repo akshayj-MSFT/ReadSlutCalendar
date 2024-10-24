@@ -64,7 +64,8 @@ async def list_calendar_events():
     events = events_result.get('items', [])
     # Sort events by start time
     events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
-    await print_events(events, f"\nUpcoming events for this week:\n----------------------------------------------------\nLink to View Calendar: https://calendar.google.com/calendar/u/0/r?cid=c2wudHNjYWxlbmRhckBnbWFpbC5jb20\n\n")
+    await send_telegram_message(f"\nUpcoming events for this week:\n----------------------------------------------------\nLink to View Calendar: https://calendar.google.com/calendar/u/0/r?cid=c2wudHNjYWxlbmRhckBnbWFpbC5jb20\n")
+    await print_events(events)
 
     # shift time window to next week
     # time_min = time_max
@@ -74,10 +75,10 @@ async def list_calendar_events():
     # events = events_result.get('items', [])
     # Sort events by start time
     # events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
-    # await print_events(events, f"\nUpcoming events for the next week:\n-----------------------------------------------------------\n\n")
+    # await send_telegram_message(f"\nUpcoming events for the next week:\n-----------------------------------------------------------\n")
+    # await print_events(events)
 
-async def print_events(events, headermessage):
-    message = headermessage
+async def print_events(events):
     for event in events:
         # convert start and end time to human-readable format
         stringStarttime = event['start'].get('dateTime', event['start'].get('date'))
@@ -90,12 +91,11 @@ async def print_events(events, headermessage):
         location = event.get('location', 'Location not specified')
         description = event.get('description', 'Description not specified')
         first_link = find_first_http_link(description)
-        
+        first_link = first_link.rstrip('"')
         # add event details to message, separated by newline
-        message += f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location} \nLink: {first_link}\n\n" 
+        message = f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location} \nLink: {first_link}\n" 
         # send message to Telegram
-        await send_telegram_message(message)
-        message = ""
+        await send_telegram_message(message)        
 
 def find_first_http_link(text):
     # Regular expression to find HTTP links
