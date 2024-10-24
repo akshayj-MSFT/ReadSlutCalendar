@@ -8,6 +8,7 @@ from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
+import re
 # from telegram import Bot
 # from telegram.constants import ParseMode
 
@@ -63,7 +64,7 @@ async def list_calendar_events():
     events = events_result.get('items', [])
     # Sort events by start time
     events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
-    await print_events(events, f"\nUpcoming events for this week:\n----------------------------------------------------\n\n")
+    await print_events(events, f"\nUpcoming events for this week:\n----------------------------------------------------\nLink to View Calendar: https://calendar.google.com/calendar/u/0/r?cid=c2wudHNjYWxlbmRhckBnbWFpbC5jb20\n\n")
 
     # shift time window to next week
     # time_min = time_max
@@ -87,11 +88,25 @@ async def print_events(events, headermessage):
         friendlyEndtime = endtime.strftime(f'%A, %B {endtime.day}{get_ordinal_suffix(endtime.day)}, %#I:%M%p')
         # get location if available
         location = event.get('location', 'Location not specified')
+        description = event.get('description', 'Description not specified')
+        first_link = find_first_http_link(description)
+        
         # add event details to message, separated by newline
-        message += f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location} \n\n" 
+        message += f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location} \nLink: {first_link}\n\n" 
         # send message to Telegram
         await send_telegram_message(message)
         message = ""
+
+def find_first_http_link(text):
+    # Regular expression to find HTTP links
+    match = re.search(r'http://[^\s]+', text)
+    if match:
+        return match.group(0)
+    else:
+        match = re.search(r'https://[^\s]+', text)
+        if match:
+            return match.group(0)
+    return None
 
 async def send_telegram_message(message):
     # bot = Bot(token=TELEGRAM_BOT_TOKEN)
