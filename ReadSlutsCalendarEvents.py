@@ -2,13 +2,14 @@ import os
 import pickle
 import os.path
 import asyncio
+import requests
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
 from google.auth.transport.requests import Request
 from dotenv import load_dotenv
 from datetime import datetime, timedelta, timezone
-from telegram import Bot
-from telegram.constants import ParseMode
+# from telegram import Bot
+# from telegram.constants import ParseMode
 
 
 # Load environment variables from .env file
@@ -18,6 +19,7 @@ CLIENT_ID = os.getenv('CLIENT_ID')
 CLIENT_SECRET = os.getenv('CLIENT_SECRET')
 TELEGRAM_BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN')
 TELEGRAM_CHAT_ID = os.getenv('TELEGRAM_CHAT_ID')
+TELEGRAM_TOPIC_ID = os.getenv('TELEGRAM_TOPIC_ID')
 
 # If modifying these scopes, delete the file token.pickle.
 SCOPES = ['https://www.googleapis.com/auth/calendar']
@@ -64,14 +66,14 @@ async def list_calendar_events():
     await print_events(events, f"\nUpcoming events for this week:\n----------------------------------------------------\n\n")
 
     # shift time window to next week
-    time_min = time_max
-    time_max = (datetime.now(timezone.utc) + timedelta(weeks=2)).isoformat()
-    events_result = service.events().list(calendarId='primary', timeMin=time_min, timeMax=time_max).execute()    
+    # time_min = time_max
+    # time_max = (datetime.now(timezone.utc) + timedelta(weeks=2)).isoformat()
+    # events_result = service.events().list(calendarId='primary', timeMin=time_min, timeMax=time_max).execute()    
 
-    events = events_result.get('items', [])
+    # events = events_result.get('items', [])
     # Sort events by start time
-    events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
-    await print_events(events, f"\nUpcoming events for the next week:\n-----------------------------------------------------------\n\n")
+    # events.sort(key=lambda event: event['start'].get('dateTime', event['start'].get('date')))
+    # await print_events(events, f"\nUpcoming events for the next week:\n-----------------------------------------------------------\n\n")
 
 async def print_events(events, headermessage):
     message = headermessage
@@ -87,13 +89,22 @@ async def print_events(events, headermessage):
         location = event.get('location', 'Location not specified')
         # add event details to message, separated by newline
         message += f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location} \n\n" 
-        
-    # send message to Telegram
-    await send_telegram_message(message)
+        # send message to Telegram
+        await send_telegram_message(message)
+        message = ""
 
 async def send_telegram_message(message):
-    bot = Bot(token=TELEGRAM_BOT_TOKEN)
-    await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message, parse_mode=ParseMode.HTML)
+    # bot = Bot(token=TELEGRAM_BOT_TOKEN)
+    # await bot.send_message(chat_id=TELEGRAM_CHAT_ID, text=message, parse_mode=ParseMode.HTML)
+
+    url = f'https://api.telegram.org/bot{TELEGRAM_BOT_TOKEN}/sendMessage'
+    payload = {
+        'chat_id': TELEGRAM_CHAT_ID,
+        'message_thread_id': TELEGRAM_TOPIC_ID,
+        'text': message
+    }
+    requests.post(url, json=payload)
+    # print(message)
     
 # Helper function to determine ordinal suffix
 def get_ordinal_suffix(day):
@@ -108,3 +119,4 @@ if __name__ == '__main__':
 
 
 # friendly_format = now.strftime(f'%A, %B {now.day}{get_ordinal_suffix(now.day)}, %#I:%M%p')
+# https://calendar.google.com/calendar/u/0/r?cid=c2wudHNjYWxlbmRhckBnbWFpbC5jb20
