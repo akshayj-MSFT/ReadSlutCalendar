@@ -91,7 +91,8 @@ async def print_events(events):
         location = event.get('location', 'Location not specified')
         description = event.get('description', 'Description not specified')
         first_link = find_first_http_link(description)
-        first_link = first_link.rstrip('"')
+        if first_link is not None:
+            first_link = first_link.rstrip('"')
         # add event details to message, separated by newline
         message = f"Event: {event['summary']}; Start: {friendlyStarttime}; End: {friendlyEndtime}; Location: {location} \nLink: {first_link}\n" 
         # send message to Telegram
